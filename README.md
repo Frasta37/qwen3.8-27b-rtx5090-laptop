@@ -36,6 +36,7 @@ PredatorSense moved the desktop to the integrated GPU and freed that memory.
 | Real opencode work, average over requests | ~82 | ~106 | ~116 |
 | Long opencode request (5.6K prompt, 7.9K out, thinking) | – | 113 (45 %) | 118 (51 %) |
 | Time to first token, follow-up turn on a 13.6K prompt | – | 0.2–0.4 s | 0.04 s (99.8 % cache) |
+| Long session, 37–68K tokens of context, thinking on (n-gram on) | – | – | 65–96 typical; 200–280 on copy rounds |
 
 Speed tracks the acceptance rate almost one to one, and acceptance depends on the content:
 code and English prose accept well, free-form prose in other languages much less. The NInfer

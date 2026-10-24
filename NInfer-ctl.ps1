@@ -106,7 +106,7 @@ function Update-Panel {
         if ($body -match 'req#(\d+)')           { $panel.LastId=$matches[1] }
         if ($body -match 'prompt ([\d,]+)')     { $p=[int]($matches[1] -replace ',',''); $panel.LastPrompt=$p; $panel.SesPrompt+=$p }
         if ($body -match 'output ([\d,]+)')     { $o=[int]($matches[1] -replace ',',''); $panel.LastOutput=$o; $panel.SesOutput+=$o }
-        if ($body -match 'cache [\d,]+ \(([\d.]+)%\)') { $panel.LastCache=$matches[1] }
+        if ($body -match 'cache [\d,]+ \(([\d.]+)%') { $panel.LastCache=$matches[1] }
     }
     elseif ($body -match 'capacity') {
         if ($body -match '(?:KV )?([\d,]+) tokens')  { $panel.KVcap=[int]($matches[1] -replace ',','') }
@@ -146,7 +146,10 @@ function Render-Dashboard {
     $rows.Add([pscustomobject]@{ T=(Pad ("  speed      : {0:N1} tok/s decode{1}" -f $panel.DecodeTokS, $pf) $W); C='Yellow' })
     $rows.Add([pscustomobject]@{ T=(Pad ("  in-flight  : {0} request(s) running" -f $panel.Running) $W); C='Yellow' })
     $rows.Add([pscustomobject]@{ T=(Pad ("  session    : prompt {0:N0}  +  output {1:N0}  =  {2:N0} tokens" -f $panel.SesPrompt, $panel.SesOutput, ($panel.SesPrompt+$panel.SesOutput)) $W); C='Green' })
-    $rows.Add([pscustomobject]@{ T=(Pad ("  KV cache   : {0:N0} tokens  {1}" -f $panel.KVcap, $panel.KVType) $W); C='White' })
+    # the capacity line is logged once at server start; fall back to the full-log scan from ninfer-live.sh
+    $kvc = if ($panel.KVcap -gt 0) { $panel.KVcap } else { [int]("0" + ($s.TKV -replace ',','')) }
+    $kvt = if ($panel.KVType) { $panel.KVType } else { $s.TKVType }
+    $rows.Add([pscustomobject]@{ T=(Pad ("  KV cache   : {0:N0} tokens  {1}" -f $kvc, $kvt) $W); C='White' })
     $rows.Add([pscustomobject]@{ T=(Pad ("  last req   : req#{0}  prompt {1:N0}  output {2:N0}  cache {3}%" -f $panel.LastId, $panel.LastPrompt, $panel.LastOutput, $panel.LastCache) $W); C='Green' })
     $rows.Add([pscustomobject]@{ T=(Pad '' $W); C='White' })
     $rows.Add([pscustomobject]@{ T=(Pad '  latest log:' $W); C='DarkGray' })
