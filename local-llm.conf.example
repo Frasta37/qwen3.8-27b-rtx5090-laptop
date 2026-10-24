@@ -1,0 +1,15 @@
+# Settings for the local LLM scripts. Copy to ~/.local-llm.conf and edit.
+# Every value can also be overridden per launch as an environment variable.
+
+# The .ninfer model file (keep it on the Linux filesystem, not under /mnt/c).
+NINFER_MODEL="$HOME/models/qwen3_8_27b_nvfp4.ninfer"
+# Engine build directories (each must contain build/apps/<engine>-serve).
+INFERNIX_DIR="$HOME/infernix"
+NINFER_DIR="$HOME/ninfer"
+# Default engine: infernix or ninfer.
+NINFER_ENGINE=infernix
+# Context ceiling in tokens. Lowered automatically at startup if it does not fit in VRAM.
+NINFER_MAX_CONTEXT=81920
+# opencode config files whose "limit": { "context": N, ... } line follows the server
+# (space-separated; Windows paths as /mnt/c/...).
+NINFER_OPENCODE_CONFIGS="/mnt/c/Users/YOU/.config/opencode/opencode.jsonc"

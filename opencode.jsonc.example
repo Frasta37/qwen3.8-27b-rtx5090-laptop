@@ -1,0 +1,21 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ninfer": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "local Qwen3.8-27B",
+      "options": { "baseURL": "http://127.0.0.1:18080/v1" },
+      "models": {
+        "qwen3.8-27b": {
+          "name": "Qwen3.8 27B",
+          // "context" is rewritten by ensure-ninfer.sh to match the running server.
+          "limit": { "context": 81920, "output": 16384 },
+          "modalities": { "input": ["text", "image"], "output": ["text"] }
+        }
+      }
+    }
+  },
+  "model": "ninfer/qwen3.8-27b",
+  // opencode compacts at context - output - buffer (~53K tokens here).
+  "compaction": { "auto": true, "keep": { "tokens": 8000 }, "buffer": 12000 }
+}
