@@ -28,29 +28,29 @@ With the Windows desktop on the NVIDIA GPU (Desktop Window Manager held ~1.5 GB)
 started DFlash2 + vision at 49,152 tokens. Switching the laptop to Optimus/Hybrid mode in
 PredatorSense moved the desktop to the integrated GPU and freed that memory.
 
-**Speed** (decode tok/s; acceptance = share of drafted tokens the model kept):
+**Speed** (decode tok/s; acceptance = share of drafted tokens the model kept). "auto + n-gram" is
+`--draft-tokens auto --ngram-draft-tokens auto`, the Infernix author's recommended setting, now the
+default in these scripts:
 
-| Workload | NInfer MTP3 | NInfer DFlash2 | Infernix DFlash2 |
-|---|---:|---:|---:|
-| Short code answer (30-token prompt, 300 tokens out, greedy, no thinking) | – | 190 (76 %) | 163 (75 %) |
-| Real opencode work, average over requests | ~82 | ~106 | ~116 |
-| Long opencode request (5.6K prompt, 7.9K out, thinking) | – | 113 (45 %) | 118 (51 %) |
-| Time to first token, follow-up turn on a 13.6K prompt | – | 0.2–0.4 s | 0.04 s (99.8 % cache) |
-| Long session, 37–68K tokens of context, thinking on (n-gram on) | – | – | 65–96 typical; 200–280 on copy rounds |
+| Workload | NInfer MTP3 | NInfer DFlash2 (7 drafts) | Infernix DFlash2 (7 drafts) | **Infernix auto + n-gram** |
+|---|---:|---:|---:|---:|
+| Short code answer (30-token prompt, 300 tokens out, greedy, no thinking) | – | 190 (76 %) | 163 (75 %) | **199** (56 %) |
+| Real opencode work, average over requests (5–14K context) | ~82 | ~106 | ~116 | – |
+| Long opencode request (5.6K prompt, 7.9K out, thinking) | – | 113 (45 %) | 118 (51 %) | – |
+| Time to first token, follow-up turn on a 13.6K prompt | – | 0.2–0.4 s | 0.04 s (99.8 % cache) | 0.2–0.4 s at 37–40K prompts (96–99 % cache) |
+| Long session, 37–68K tokens of context, thinking on | – | – | – | 65–96 typical, **200–280 on copy rounds** |
+| KV room at `--max-context 81920` | refused | refused | 86,848 tokens | 82,752 tokens |
 
 Speed tracks the acceptance rate almost one to one, and acceptance depends on the content:
 code and English prose accept well, free-form prose in other languages much less. The NInfer
-MTP3 figure is from earlier everyday use, not a controlled comparison.
+MTP3 figure is from earlier everyday use, not a controlled comparison. Copy rounds happen when
+the model reproduces text already in the context (an edit of existing code, a file echoed from
+a tool result): n-gram proposes up to 63 tokens at once and the full model only verifies them.
 
-**Infernix with `--draft-tokens auto --ngram-draft-tokens auto`** (the author's recommended
-setting; the engine picks the draft window, and copies text already in the context, such as code
-being edited): the same short test went from 163 to 199 tok/s, and in an opencode editing
-session at 51–68K tokens of context, requests that reproduced existing code ran at 222–279 tok/s
-while the rest stayed at the usual 65–140 tok/s. KV room dropped from 86,848 to 82,752 tokens.
-
-Infernix is slower on the short test with fixed 7 drafts because it replaced a lower-precision shortcut NInfer
-uses while verifying drafts (see its README, "Defaults elsewhere that Infernix rejected"); in
-real work with long prompts its faster prefill and better prefix cache more than make up for it.
+With fixed 7 drafts Infernix is slower on the short test because it replaced a lower-precision
+shortcut NInfer uses while verifying drafts (see its README, "Defaults elsewhere that Infernix
+rejected"); the automatic draft window more than makes up for it, and in real work the faster
+prefill and better prefix cache add to that.
 
 ## What the scripts do
 
