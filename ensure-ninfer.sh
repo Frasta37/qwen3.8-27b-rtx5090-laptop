@@ -8,7 +8,7 @@
 PORT=${NINFER_PORT:-18080}
 PIDFILE="$HOME/.ninfer.pid"
 LOG=${NINFER_LOG:-/tmp/ninfer.log}
-SPEC_ARGS=${NINFER_SPEC:-"--spec dflash2 --draft-tokens 7"}
+SPEC_ARGS=${NINFER_SPEC:-"--spec dflash2 --draft-tokens auto --ngram-draft-tokens auto"}
 # Context ceiling; int8 KV costs ~32 KiB/token (81920 -> ~2.5 GiB of VRAM).
 MAX_CONTEXT=${NINFER_MAX_CONTEXT:-81920}
 MIN_CONTEXT=${NINFER_MIN_CONTEXT:-24576}

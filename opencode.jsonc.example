@@ -16,6 +16,6 @@
     }
   },
   "model": "ninfer/qwen3.8-27b",
-  // opencode compacts at context - output - buffer (~53K tokens here).
-  "compaction": { "auto": true, "keep": { "tokens": 8000 }, "buffer": 12000 }
+  // opencode compacts at context - buffer (~62K here), leaving room for a 16K answer.
+  "compaction": { "auto": true, "keep": { "tokens": 8000 }, "buffer": 20000 }
 }

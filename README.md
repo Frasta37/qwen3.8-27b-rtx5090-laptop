@@ -41,7 +41,13 @@ Speed tracks the acceptance rate almost one to one, and acceptance depends on th
 code and English prose accept well, free-form prose in other languages much less. The NInfer
 MTP3 figure is from earlier everyday use, not a controlled comparison.
 
-Infernix is slower on the short test because it replaced a lower-precision shortcut NInfer
+**Infernix with `--draft-tokens auto --ngram-draft-tokens auto`** (the author's recommended
+setting; the engine picks the draft window, and copies text already in the context, such as code
+being edited): the same short test went from 163 to 199 tok/s, and in an opencode editing
+session at 51–68K tokens of context, requests that reproduced existing code ran at 222–279 tok/s
+while the rest stayed at the usual 65–140 tok/s. KV room dropped from 86,848 to 82,752 tokens.
+
+Infernix is slower on the short test with fixed 7 drafts because it replaced a lower-precision shortcut NInfer
 uses while verifying drafts (see its README, "Defaults elsewhere that Infernix rejected"); in
 real work with long prompts its faster prefill and better prefix cache more than make up for it.
 
@@ -83,8 +89,9 @@ Read the scripts before running them; `start-ninfer.sh` kills a ComfyUI process 
    Graphics so they do not take VRAM at startup.
 
 Flags used (`ensure-ninfer.sh`): `--max-concurrency 1 --max-context 81920 --kv-capacity auto
---kv-dtype int8 --vision --default-thinking-budget 4096 --spec dflash2 --draft-tokens 7`, plus
-`--vram-headroom-mib 512 --tolerant-tool-calls` on Infernix. `--lm-head-draft` (~0.35 GiB)
+--kv-dtype int8 --vision --default-thinking-budget 4096 --spec dflash2 --draft-tokens auto
+--ngram-draft-tokens auto`, plus `--vram-headroom-mib 512 --tolerant-tool-calls` on Infernix
+(`--draft-tokens 7` on NInfer, which has no `auto` and no n-gram drafting). `--lm-head-draft` (~0.35 GiB)
 and `--prefill-chunk 4096` were dropped to fit. Output quality is not affected by DFlash2:
 the full model verifies every drafted token.
 
@@ -93,6 +100,8 @@ the full model verifies every drafted token.
 - The per-token KV cost used for the context fitting is 32,816 B (int8), NInfer's own figure
   for this model. For a different KV format or model, change it in `smaller_context`.
 - Infernix needs two Ctrl+C to stop when run in the foreground; the scripts handle it.
+- opencode compacts when the context reaches `limit.context - compaction.buffer` (the output
+  limit is not subtracted), so keep `buffer` above `limit.output`; the example uses 20,000.
 - Pinning host RAM: Infernix pins 8 GiB for its prefix cache by default (`--host-context-mib`).
 
 License: MIT.
