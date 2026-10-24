@@ -59,10 +59,10 @@ real work with long prompts its faster prefill and better prefix cache more than
 - `stop-ninfer.sh`: stops the server by exact process name.
 - `ninfer-stats.sh [N]`: per-request decode speed and draft acceptance from the last N
   requests in the log, with a time-weighted total.
-- `ninfer-live.sh`, `ninfer-stream.sh`, `windows/NInfer-ctl.ps1`: a live control panel
-  (PowerShell window: start/stop, VRAM, tokens per second, last requests, log tail).
-- `windows/opencode-launcher.bat`: starts the server if needed, waits for it, then opens
-  opencode in a project folder.
+- `ninfer-live.sh`, `ninfer-stream.sh`, `NInfer-ctl.ps1`, `NInfer-Control.bat`: a live control
+  panel (PowerShell window: start/stop, VRAM, tokens per second, last requests, log tail).
+- `opencode-launcher.bat`: starts the server if needed, waits for it, then opens opencode in
+  a project folder.
 
 Read the scripts before running them; `start-ninfer.sh` kills a ComfyUI process by name.
 
@@ -75,8 +75,8 @@ Read the scripts before running them; `start-ninfer.sh` kills a ComfyUI process 
    `~/.local-llm.conf` (model path, engine directories, your opencode config path).
 3. In opencode, point a provider at `http://127.0.0.1:18080/v1` (see `opencode.jsonc.example`).
    The `"limit": { "context": N, ... }` line must be on one line in that form; the scripts rewrite N.
-4. Start with `~/start-ninfer.sh`. For the panel, copy the `windows` folder somewhere on
-   Windows and run `NInfer-Control.bat`.
+4. Start with `~/start-ninfer.sh`. For the panel, copy `NInfer-ctl.ps1` and
+   `NInfer-Control.bat` into one folder on Windows and run `NInfer-Control.bat`.
 5. If the GPU also drives your screen, switch the laptop to Optimus/Hybrid mode (PredatorSense,
    Armoury Crate, Vantage, …; one reboot). Games still run on the NVIDIA GPU. Move apps that
    need no GPU (Electron apps, browsers) to "Power saving" in Windows Settings > Display >
