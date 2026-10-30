@@ -39,9 +39,14 @@ sync_opencode() {
   ctx=$(pgrep -ax '(ninfer|infernix)-serve' | grep -oE -- '--max-context [0-9]+' | head -n 1 | cut -d' ' -f2)
   [ -n "$ctx" ] || return 0
   for f in "${OPENCODE_CONFIGS[@]}"; do
-    [ -f "$f" ] || continue
+    [ -f "$f" ] || { echo "opencode config not found, skipped: $f"; continue; }
     grep -qE "\"limit\": \{ \"context\": $ctx," "$f" && continue
-    sed -i -E "s/(\"limit\": \{ \"context\": )[0-9]+/\1$ctx/" "$f" && echo "opencode context set to $ctx in $f"
+    sed -i -E "s/(\"limit\": \{ \"context\": )[0-9]+/\1$ctx/" "$f"
+    if grep -qE "\"limit\": \{ \"context\": $ctx," "$f"; then
+      echo "opencode context set to $ctx in $f"
+    else
+      echo "WARNING: no one-line \"limit\": { \"context\": N, ... } in $f; set its context to $ctx by hand"
+    fi
   done
 }
 
