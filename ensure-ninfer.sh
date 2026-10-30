@@ -23,7 +23,9 @@ case "${NINFER_ENGINE:-infernix}" in
     ENGINE_ARGS=(--vram-headroom-mib "${NINFER_HEADROOM_MIB:-512}" --tolerant-tool-calls) ;;
   ninfer)
     ENGINE_DIR=${NINFER_DIR:-$HOME/ninfer}; SERVER=./build/apps/ninfer-serve
-    ENGINE_ARGS=() ;;
+    ENGINE_ARGS=()
+    # NInfer has no automatic draft window and no n-gram drafting.
+    [ -n "$NINFER_SPEC" ] || SPEC_ARGS="--spec dflash2 --draft-tokens 7" ;;
   *) echo "unknown NINFER_ENGINE: $NINFER_ENGINE"; exit 1 ;;
 esac
 

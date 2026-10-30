@@ -8,49 +8,79 @@ model with [Infernix](https://github.com/Wallawalla47/Infernix) or
 desktop card; this documents what fits in 24 GB and how to keep it running without babysitting.
 
 Tested on one machine only: Acer Predator 16, RTX 5090 Laptop GPU (24 GB), Windows 11 +
-WSL2 Ubuntu, NVIDIA driver 617.42, CUDA 13.4, GCC 15.2, CMake 4.2.3, Infernix build
-`windows-2026.10.18-59-gbe0d06e6` (commit `be0d06e6`), NInfer from a `ninfer-rtx5090-mobile`
-fork. The model file is 17.7 GiB of weights on the GPU with vision loaded. Numbers below were
-measured on 2026-10-24; your results will differ.
+WSL2 Ubuntu, NVIDIA driver 617.42, CUDA 13.4, GCC 15.2, CMake 4.2.3. Engines: Infernix
+`be0d06e6` (2026-10-24) and `f97ce37d` (main on 2026-10-30, includes PR #50); NInfer from the
+`ninfer-rtx5090-mobile` fork (`b53468fa`, synced with upstream through `e31bc99b`). The model
+file is 17.7 GiB of weights on the GPU with vision loaded. Each number below names its build
+and date; your results will differ.
 
 ## Results
 
-**What fits in 24 GB** (DFlash2 with 7 drafts, `--vision`, int8 KV, one request at a time,
-no `--lm-head-draft`, default prefill chunk, desktop on the integrated GPU):
+**What fits in 24 GB** (DFlash2, `--vision`, int8 KV, one request at a time, no
+`--lm-head-draft`, default prefill chunk, Windows desktop on the integrated GPU):
 
 | Engine | Startup headroom | `--max-context` | Result |
 |---|---|---:|---|
 | NInfer | 1 GiB (fixed) | 65,536 | starts |
 | NInfer | 1 GiB (fixed) | 81,920 | refused, 0.38 GiB short |
-| Infernix | 512 MiB (`--vram-headroom-mib 512`) | 81,920 | starts; `--kv-capacity auto` sized the KV pool at 86,848 tokens |
+| Infernix | 512 MiB (`--vram-headroom-mib 512`) | 81,920 | starts |
 
-With the Windows desktop on the NVIDIA GPU (Desktop Window Manager held ~1.5 GB) NInfer only
-started DFlash2 + vision at 49,152 tokens. Switching the laptop to Optimus/Hybrid mode in
-PredatorSense moved the desktop to the integrated GPU and freed that memory.
+Infernix's `--kv-capacity auto` sized its KV pool at 86,848 tokens with 7 fixed drafts (started
+with `--max-context 65536`) and at 82,752 with `--draft-tokens auto --ngram-draft-tokens auto`
+(started with 81,920). Infernix's documentation notes that wider verification rounds need extra
+workspace and graph memory; the two starts also differed in `--max-context`.
 
-**Speed** (decode tok/s; acceptance = share of drafted tokens the model kept). "auto + n-gram" is
-`--draft-tokens auto --ngram-draft-tokens auto`, the Infernix author's recommended setting, now the
-default in these scripts:
+With the Windows desktop on the NVIDIA GPU (Desktop Window Manager held ~1.5 GB), NInfer was
+0.24 GiB short of DFlash2 + vision at 65,536 tokens and ran at 49,152. Switching the laptop to
+Optimus/Hybrid mode in PredatorSense moved the desktop to the integrated GPU and freed that memory.
 
-| Workload | NInfer MTP3 | NInfer DFlash2 (7 drafts) | Infernix DFlash2 (7 drafts) | **Infernix auto + n-gram** |
+**Speed: controlled short test** (2026-10-30). The same greedy request on both engines with the
+same flags, run alternately (Infernix, NInfer, Infernix, NInfer); each session had one warm-up
+and 3 measured requests, and all six measured runs per engine were within 0.3 tok/s. Flags:
+`--max-concurrency 1 --max-context 65536 --kv-capacity auto --kv-dtype int8 --vision
+--default-thinking-budget 4096 --spec dflash2 --draft-tokens 7` (Infernix also
+`--vram-headroom-mib 512 --tolerant-tool-calls`). Request: "Write a Python function that reads a
+CSV file and returns the average of each numeric column.", `max_tokens` 400, temperature 0,
+thinking off.
+
+| Engine (commit) | Decode tok/s | Output tokens | Accepted / drafted | Rounds | Time per round |
+|---|---:|---:|---:|---:|---:|
+| NInfer fork (`b53468fa`) | 196.0–196.3 | 297 | 250/329 (76.0 %) | 47 | 32.1 ms |
+| Infernix main (`f97ce37d`, includes PR #50) | 178.2–178.4 | 299 | 250/343 (72.9 %) | 49 | 34.1 ms |
+| Infernix `be0d06e6` (same command, 2026-10-24, average of 2 runs) | 163.1 | 299 | 251/336 (74.7 %) | 48 | 38.1 ms |
+| Infernix `be0d06e6`, `--draft-tokens auto --ngram-draft-tokens auto` (2026-10-24, one run) | 198.8 | 299 | 263/467 (56.3 %) | – | – |
+
+Rounds = drafted / 7; time per round = (output − 1) / decode rate / rounds. With automatic
+drafting the round length varies, so neither is given.
+
+With 7 fixed drafts NInfer is about 10 % faster than Infernix on this reply. About 3.5 % of that
+is acceptance: the engines' greedy outputs differ (297 vs 299 tokens) and Infernix's needs 2 more
+rounds. The other ~6 % is time per round; its cause has not been isolated. Between `be0d06e6` and
+`f97ce37d` (which includes PR #50), Infernix's time per round here fell from 38.1 to 34.1 ms; the
+two builds were measured on different days, and other changes between them are included.
+Infernix's automatic draft window brings it level with NInfer (198.8 against 196 tok/s, different
+days and builds; not yet re-measured on `f97ce37d`); NInfer has no automatic window. On a desktop RTX 5090 with the official artifact and
+upstream NInfer, the Infernix author measured the two engines level at about 420 tok/s.
+
+**Speed: everyday opencode use.** Not a controlled comparison: each column is a different set of
+requests, the NInfer DFlash2 session ran before the switch to Optimus (desktop on the NVIDIA GPU),
+and decode slows as the context grows. Infernix columns are build `be0d06e6`.
+
+| | NInfer MTP3 | NInfer DFlash2, 7 drafts | Infernix DFlash2, 7 drafts | Infernix auto + n-gram |
 |---|---:|---:|---:|---:|
-| Short code answer (30-token prompt, 300 tokens out, greedy, no thinking) | – | 190 (76 %) | 163 (75 %) | **199** (56 %) |
-| Real opencode work, average over requests (5–14K context) | ~82 | ~106 | ~116 | – |
-| Long opencode request (5.6K prompt, 7.9K out, thinking) | – | 113 (45 %) | 118 (51 %) | – |
-| Time to first token, follow-up turn on a 13.6K prompt | – | 0.2–0.4 s | 0.04 s (99.8 % cache) | 0.2–0.4 s at 37–40K prompts (96–99 % cache) |
-| Long session, 37–68K tokens of context, thinking on | – | – | – | 65–96 typical, **200–280 on copy rounds** |
-| KV room at `--max-context 81920` | refused | refused | 86,848 tokens | 82,752 tokens |
+| Requests (prompt sizes) | – | 5 (7–23K) | 4 (0.5–14K) | 20 (51–68K) |
+| Decode tok/s, weighted by time | ~82* | 111 | 116 | 110 |
+| Decode tok/s, per request | – | 79–128 | 83–118 | 65–279 |
+| First token on a follow-up turn | – | – | 0.04 s at 13.6K (99.8 % cached) | 0.22–0.44 s at 38–41K (96–99 % cached) |
 
-Speed tracks the acceptance rate almost one to one, and acceptance depends on the content:
-code and English prose accept well, free-form prose in other languages much less. The NInfer
-MTP3 figure is from earlier everyday use, not a controlled comparison. Copy rounds happen when
-the model reproduces text already in the context (an edit of existing code, a file echoed from
-a tool result): n-gram proposes up to 63 tokens at once and the full model only verifies them.
+\* From the previous setup's own monitoring, not measured here.
 
-With fixed 7 drafts Infernix is slower on the short test because it replaced a lower-precision
-shortcut NInfer uses while verifying drafts (see its README, "Defaults elsewhere that Infernix
-rejected"); the automatic draft window more than makes up for it, and in real work the faster
-prefill and better prefix cache add to that.
+Speed follows the acceptance rate closely, and acceptance depends on the content: code and
+English prose accept well, free-form prose in other languages much less. The 222–279 tok/s
+requests in the n-gram session were most likely copy-heavy (per-request copy counts were not
+recorded): when the model reproduces text already in the context, such as an edit of existing code
+or a file echoed from a tool result, n-gram drafting proposes up to 63 tokens at once and the full
+model only verifies them.
 
 ## What the scripts do
 
