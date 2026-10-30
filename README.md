@@ -41,26 +41,37 @@ and 3 measured requests, and all six measured runs per engine were within 0.3 to
 --default-thinking-budget 4096 --spec dflash2 --draft-tokens 7` (Infernix also
 `--vram-headroom-mib 512 --tolerant-tool-calls`). Request: "Write a Python function that reads a
 CSV file and returns the average of each numeric column.", `max_tokens` 400, temperature 0,
-thinking off.
+thinking off. The two `auto` rows are separate measurements of the same request on the normal
+server (`--max-context 81920`, `--draft-tokens auto --ngram-draft-tokens auto`), not part of the
+alternating runs.
 
 | Engine (commit) | Decode tok/s | Output tokens | Accepted / drafted | Rounds | Time per round |
 |---|---:|---:|---:|---:|---:|
 | NInfer fork (`b53468fa`) | 196.0–196.3 | 297 | 250/329 (76.0 %) | 47 | 32.1 ms |
 | Infernix main (`f97ce37d`, includes PR #50) | 178.2–178.4 | 299 | 250/343 (72.9 %) | 49 | 34.1 ms |
 | Infernix `be0d06e6` (same command, 2026-10-24, average of 2 runs) | 163.1 | 299 | 251/336 (74.7 %) | 48 | 38.1 ms |
-| Infernix `be0d06e6`, `--draft-tokens auto --ngram-draft-tokens auto` (2026-10-24, one run) | 198.8 | 299 | 263/467 (56.3 %) | – | – |
+| Infernix main (`f97ce37d`), `--draft-tokens auto --ngram-draft-tokens auto` (2026-10-30, 2 runs) | 206.6–206.8 | 299 | 263/441–462 (57–60 %) | 36 | 40.0 ms |
+| Infernix `be0d06e6`, `--draft-tokens auto --ngram-draft-tokens auto` (2026-10-24, one run) | 198.8 | 299 | 263/467 (56.3 %) | 36 | 41.6 ms |
 
-Rounds = drafted / 7; time per round = (output − 1) / decode rate / rounds. With automatic
-drafting the round length varies, so neither is given.
+Rounds = output − accepted (each round yields its accepted drafts plus one token from the full
+model; with 7 fixed drafts this equals drafted / 7). Time per round = (output − 1) / decode rate /
+rounds.
 
 With 7 fixed drafts NInfer is about 10 % faster than Infernix on this reply. About 3.5 % of that
 is acceptance: the engines' greedy outputs differ (297 vs 299 tokens) and Infernix's needs 2 more
 rounds. The other ~6 % is time per round; its cause has not been isolated. Between `be0d06e6` and
 `f97ce37d` (which includes PR #50), Infernix's time per round here fell from 38.1 to 34.1 ms; the
 two builds were measured on different days, and other changes between them are included.
-Infernix's automatic draft window brings it level with NInfer (198.8 against 196 tok/s, different
-days and builds; not yet re-measured on `f97ce37d`); NInfer has no automatic window. On a desktop RTX 5090 with the official artifact and
-upstream NInfer, the Infernix author measured the two engines level at about 420 tok/s.
+
+With its automatic draft window (`--draft-tokens auto --ngram-draft-tokens auto`, the default in
+these scripts), current Infernix is about 5 % faster than NInfer at 7 drafts on this reply: 206.6–206.8
+against 196.0–196.3 tok/s. It writes the same 299-token answer in 36 longer rounds (12–13 drafts
+each) instead of 49 short ones. The older build gave identical counts in this mode at 198.8 tok/s,
+so the newer build's rounds are about 4 % shorter (40.0 against 41.6 ms). The first request after a
+server start was slower in both starts measured (197.5 and 186.6 tok/s) and wrote a slightly
+different answer (280 and 286 tokens); the two runs in the table followed it. NInfer has no
+automatic window. On a desktop RTX 5090 with the official artifact and upstream NInfer, the
+Infernix author measured the two engines level at about 420 tok/s (7 drafts).
 
 **Speed: everyday opencode use.** Not a controlled comparison: each column is a different set of
 requests, the NInfer DFlash2 session ran before the switch to Optimus (desktop on the NVIDIA GPU),
