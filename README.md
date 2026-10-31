@@ -139,6 +139,11 @@ the full model verifies every drafted token.
 
 ## Notes
 
+- The laptop's power mode matters. On 2026-10-31 the auto + n-gram short test ran at
+  184.8–189.6 tok/s until PredatorSense was switched to Turbo, then at 203.8–205.3 tok/s: the same
+  299-token answer in the same 36 rounds, about 9 % faster. The 2026-10-30 results above match the
+  Turbo figure. Measure on mains power in Performance or Turbo mode, and check the mode first when
+  speeds look low: it may fall back to the default after a restart or when unplugged.
 - The per-token KV cost used for the context fitting is 32,816 B (int8), NInfer's own figure
   for this model. For a different KV format or model, change it in `smaller_context`.
 - Infernix needs two Ctrl+C to stop when run in the foreground; the scripts handle it.
